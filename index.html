@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Calling Agent Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:          #080608;
+  --bg2:         #110A0A;
+  --bg3:         #1A0F0F;
+  --border:      #2E1414;
+  --border2:     #451C1C;
+  --blue:        #9B1C1C;
+  --blue-dim:    #7F1D1D;
+  --blue-glow:   rgba(153,27,27,0.22);
+  --green:       #22C55E;
+  --green-dim:   #16A34A;
+  --green-glow:  rgba(34,197,94,0.12);
+  --orange:      #F97316;
+  --orange-glow: rgba(249,115,22,0.12);
+  --red:         #C62828;
+  --red-glow:    rgba(198,40,40,0.18);
+  --yellow:      #EAB308;
+  --text:        #F5EDED;
+  --text2:       #A89090;
+  --text3:       #6B5252;
+  --radius:      10px;
+  --radius-lg:   16px;
+  --font:        'DM Sans', sans-serif;
+  --font-mono:   'DM Mono', monospace;
+  --font-serif:  'Fraunces', serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  line-height: 1.6;
+}
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #3d0f0f; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #5a1515; }
+::selection { background: rgba(153,27,27,0.3); color: #e57373; }
+
+/* ── SHELL ── */
+.shell {
+  display: grid;
+  grid-template-rows: 52px 1fr;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  background: linear-gradient(90deg, #160404 0%, #0e0303 60%, #090202 100%);
+  border-bottom: 1px solid #2a0c0c;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  gap: 14px;
+}
+.logo {
+  display: flex; align-items: center; gap: 9px;
+  font-family: var(--font-serif);
+  font-size: 1.1rem; font-weight: 700;
+  background: linear-gradient(90deg, #dc2626, #7f1d1d);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
+}
+.topbar-badge { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green); box-shadow: 0 0 7px var(--green);
+  animation: pulse-dot 2s infinite;
+}
+@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.status-label { font-size: 0.75rem; color: var(--text2); }
+.clock { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text2); margin-left: 12px; }
+
+/* ── WORKSPACE: 4 columns ── */
+.workspace {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1.5fr 1.3fr;
+  overflow: hidden;
+  height: 100%;
+}
+.col {
+  display: flex; flex-direction: column;
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+  background: var(--bg);
+  min-width: 0;
+}
+.col:last-child { border-right: none; }
+
+.col-header {
+  padding: 9px 14px;
+  background: linear-gradient(90deg, #120505, #0c0303);
+  border-bottom: 1px solid #250a0a;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  flex-shrink: 0;
+  display: flex; align-items: center; gap: 7px;
+}
+.col-header-title { flex: 1; }
+
+.col-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px;
+}
+
+/* ── SCRIPT TABS ── */
+.script-tabs {
+  display: flex; gap: 3px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 3px;
+  margin-bottom: 14px;
+}
+.script-tab {
+  flex: 1; padding: 7px 6px;
+  border-radius: 7px;
+  font-size: 0.78rem; font-weight: 500;
+  color: var(--text2); cursor: pointer;
+  text-align: center; transition: all 0.15s;
+  user-select: none; border: none; background: none;
+}
+.script-tab:hover { color: var(--text); }
+.script-tab.active { background: var(--bg2); color: var(--text); border: 1px solid var(--border2); }
+.script-pane { display: none; }
+.script-pane.active { display: block; animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(3px)} to{opacity:1;transform:none} }
+
+/* ── CARDS ── */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.card-title {
+  font-size: 0.7rem; font-weight: 600; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.07em;
+  margin-bottom: 10px;
+  display: flex; align-items: center; gap: 7px;
+}
+.card-title .dot { width: 6px; height: 6px; border-radius: 50%; }
+
+/* ── STEPS ── */
+.step { margin-bottom: 10px; }
+.step-head {
+  display: flex; align-items: center; gap: 9px;
+  cursor: pointer; padding: 8px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color 0.15s; user-select: none;
+}
+.step-head:hover { border-color: var(--border2); }
+.step-head.open { border-color: var(--blue); border-bottom-left-radius:0; border-bottom-right-radius:0; }
+.step-num {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--blue-dim); color: #fff;
+  font-size: 0.65rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.step-label { font-size: 0.82rem; font-weight: 600; color: var(--text); flex: 1; }
+.step-chevron { color: var(--text3); font-size: 0.7rem; transition: transform 0.2s; }
+.step-head.open .step-chevron { transform: rotate(180deg); }
+.step-body {
+  display: none; padding: 12px 14px;
+  background: var(--bg2);
+  border: 1px solid var(--blue); border-top: none;
+  border-bottom-left-radius: var(--radius); border-bottom-right-radius: var(--radius);
+}
+.step-body.open { display: block; }
+
+.say-line {
+  background: linear-gradient(90deg, var(--blue-glow), transparent);
+  border-left: 3px solid var(--blue);
+  padding: 8px 12px;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 0.83rem; font-style: italic; color: var(--text);
+  margin-bottom: 7px; line-height: 1.6;
+}
+.say-line::before { content: '"'; color: var(--blue); font-style: normal; font-weight: 700; margin-right: 2px; }
+.say-line::after  { content: '"'; color: var(--blue); font-style: normal; font-weight: 700; margin-left: 2px; }
+
+.note-line {
+  font-size: 0.75rem; color: var(--text3); font-style: italic;
+  padding: 5px 9px; background: var(--bg3); border-radius: 6px; margin-bottom: 6px;
+}
+.note-line::before { content: '⚡ '; }
+
+.arrow-line {
+  font-size: 0.8rem; color: var(--text2);
+  padding: 3px 0 3px 14px; margin-bottom: 4px;
+  border-left: 2px solid var(--border2);
+}
+.arrow-line::before { content: '→  '; color: var(--blue); font-weight: 700; }
+
+.objection { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 9px; }
+.obj-trigger {
+  background: rgba(239,68,68,0.07); border-bottom: 1px solid var(--border);
+  padding: 7px 12px; font-size: 0.75rem; color: var(--red);
+  display: flex; align-items: center; gap: 5px;
+}
+.obj-response {
+  background: var(--green-glow); padding: 9px 12px;
+  font-size: 0.82rem; font-style: italic; color: var(--text); line-height: 1.6;
+}
+.obj-response::before { content: '"'; color: var(--green); font-style: normal; font-weight: 700; }
+.obj-response::after  { content: '"'; color: var(--green); font-style: normal; font-weight: 700; }
+
+/* ── TAGS ── */
+.tag {
+  display: inline-block; padding: 2px 7px; border-radius: 20px;
+  font-size: 0.65rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+}
+.tag-blue   { background: var(--blue-glow);  color: var(--blue);   }
+.tag-green  { background: var(--green-glow); color: var(--green);  }
+.tag-orange { background: var(--orange-glow);color: var(--orange); }
+.tag-red    { background: var(--red-glow);   color: var(--red);    }
+.tag-yellow { background: rgba(234,179,8,0.1); color: var(--yellow); }
+
+/* ── APPLIANCE PICKER ── */
+.picker-section {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 12px; margin-bottom: 10px;
+}
+.picker-label {
+  font-size: 0.67rem; font-weight: 700; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.appl-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.appl-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 8px 4px; border-radius: 8px;
+  background: var(--bg3); border: 1px solid var(--border);
+  cursor: pointer; font-size: 1.2rem; transition: all 0.15s; user-select: none;
+}
+.appl-btn span { font-size: 0.6rem; color: var(--text3); text-align: center; line-height: 1.2; font-family: var(--font); }
+.appl-btn:hover { border-color: var(--border2); }
+.appl-btn.sel { border-color: var(--blue); background: var(--blue-glow); }
+.appl-btn.sel span { color: var(--blue); }
+
+.service-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.svc-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 8px; border-radius: var(--radius);
+  background: var(--bg3); border: 1px solid var(--border);
+  cursor: pointer; font-size: 0.82rem; font-weight: 600;
+  color: var(--text2); transition: all 0.15s; user-select: none;
+}
+.svc-btn:hover { border-color: var(--border2); color: var(--text); }
+.svc-btn.sel-repair   { border-color: var(--blue);  background: var(--blue-glow);  color: var(--blue);  }
+.svc-btn.sel-install  { border-color: var(--green); background: var(--green-glow); color: var(--green); }
+
+/* ── ZIP / TECH BADGE ── */
+.zip-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--bg2);
+  margin-bottom: 10px; font-size: 0.75rem;
+}
+.zip-label { color: var(--text3); flex-shrink: 0; }
+.tech-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 9px; border-radius: 20px;
+  font-size: 0.7rem; font-weight: 700;
+}
+.tech-badge.exact   { background: var(--green-glow);  border: 1px solid var(--green);  color: var(--green);  }
+.tech-badge.approx  { background: var(--orange-glow); border: 1px solid var(--orange); color: var(--orange); }
+.tech-badge.outside { background: var(--red-glow);    border: 1px solid var(--red);    color: var(--red);    }
+
+/* ── INTAKE FORM ── */
+.form-section {
+  font-size: 0.67rem; font-weight: 700; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.1em;
+  padding: 3px 0; border-bottom: 1px solid var(--border);
+  margin: 14px 0 10px;
+  display: flex; align-items: center; gap: 7px;
+}
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-grid.full { grid-template-columns: 1fr; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field.span2 { grid-column: span 2; }
+.field label { font-size: 0.68rem; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; }
+.field .required { color: var(--red); margin-left: 2px; }
+.field input, .field select, .field textarea {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text); font-family: var(--font);
+  font-size: 0.85rem; padding: 7px 10px; outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s; width: 100%;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-glow);
+}
+.field input::placeholder, .field textarea::placeholder { color: var(--text3); }
+.field select option { background: var(--bg3); }
+.field textarea { resize: vertical; min-height: 70px; }
+.field input.filled, .field select.filled { border-color: var(--green); }
+
+/* ── VERIFY CHECKLIST ── */
+.verify-list { display: flex; flex-direction: column; gap: 6px; }
+.verify-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 12px; background: var(--bg3);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  cursor: pointer; font-size: 0.8rem; color: var(--text2);
+  transition: all 0.15s; user-select: none;
+}
+.verify-item:hover { border-color: var(--border2); }
+.verify-item.done { background: var(--green-glow); border-color: var(--green); color: var(--green); }
+.verify-check {
+  width: 16px; height: 16px; border: 2px solid var(--border2);
+  border-radius: 4px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: transparent; transition: all 0.15s;
+}
+.verify-item.done .verify-check { background: var(--green); border-color: var(--green); color: #fff; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: var(--radius);
+  font-family: var(--font); font-size: 0.82rem; font-weight: 600;
+  cursor: pointer; border: none; outline: none; transition: all 0.15s;
+}
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-primary:hover { background: var(--blue-dim); transform: translateY(-1px); }
+.btn-success { background: var(--green-dim); color: #fff; }
+.btn-success:hover { background: var(--green); }
+.btn-danger  { background: var(--red); color: #fff; }
+.btn-danger:hover  { filter: brightness(1.1); }
+.btn-ghost { background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
+.btn-ghost:hover { color: var(--text); border-color: var(--border2); }
+.btn-orange { background: var(--orange); color: #fff; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+
+/* ── SAVED BADGE ── */
+.saved-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: var(--green-glow); border: 1px solid var(--green); color: var(--green);
+  border-radius: 20px; padding: 2px 8px;
+  font-size: 0.68rem; font-weight: 600; opacity: 0; transition: opacity 0.3s;
+  text-transform: none; letter-spacing: 0;
+}
+.saved-badge.show { opacity: 1; }
+
+/* ── PROGRESS BAR ── */
+.progress-bar-wrap { background: var(--bg3); border-radius: 4px; height: 4px; overflow: hidden; margin-bottom: 3px; }
+.progress-bar { height: 100%; background: linear-gradient(90deg, var(--blue), var(--green)); border-radius: 4px; transition: width 0.4s ease; width: 0%; }
+.progress-label { font-size: 0.7rem; color: var(--text3); }
+
+/* ── VOICE TRANSCRIBER ── */
+.voice-controls {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  align-items: center; padding-bottom: 12px;
+  border-bottom: 1px solid var(--border); margin-bottom: 12px;
+}
+.visualizer-wrap { padding: 10px 0; border-bottom: 1px solid var(--border); margin-bottom: 12px; background: var(--bg); }
+.visualizer { height: 46px; display: flex; align-items: center; gap: 2px; overflow: hidden; }
+.vis-bar { width: 3px; background: var(--blue); border-radius: 2px; height: 4px; transition: height 0.08s ease; opacity: 0.7; }
+.recording .vis-bar { opacity: 1; }
+.rec-indicator { display: flex; align-items: center; gap: 7px; font-size: 0.75rem; color: var(--text3); }
+.rec-ring { width: 10px; height: 10px; border-radius: 50%; background: var(--border2); }
+.rec-ring.active { background: var(--red); box-shadow: 0 0 8px rgba(198,40,40,0.6); animation: blink-rec 1.2s infinite; }
+@keyframes blink-rec { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.timer { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text2); min-width: 46px; }
+.transcript-label {
+  font-size: 0.67rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text3); margin-bottom: 8px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.transcript-box {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius);
+  min-height: 140px; max-height: 240px; overflow-y: auto;
+  padding: 10px 12px; font-family: var(--font-mono); font-size: 0.78rem;
+  line-height: 1.7; color: var(--text); white-space: pre-wrap; position: relative;
+}
+.transcript-box.empty::after {
+  content: "Transcript appears here…"; color: var(--text3); font-style: italic;
+}
+.interim { color: var(--text2); font-style: italic; }
+.final   { color: var(--text); }
+.speaker-label {
+  display: inline-block; font-size: 0.65rem; font-weight: 700;
+  color: var(--green); background: var(--green-glow);
+  border-radius: 3px; padding: 1px 5px; margin-right: 5px; font-style: normal;
+}
+.autofill-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: 6px;
+  background: var(--orange-glow); border: 1px solid var(--orange);
+  color: var(--orange); font-size: 0.72rem; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.autofill-btn:hover { background: rgba(249,115,22,0.2); }
+
+/* ── NOTICE ── */
+.notice {
+  display: flex; gap: 8px;
+  background: rgba(234,179,8,0.07); border: 1px solid rgba(234,179,8,0.25);
+  border-radius: var(--radius); padding: 9px 11px; margin-bottom: 12px;
+  font-size: 0.76rem; color: var(--yellow); line-height: 1.5;
+}
+
+/* ── TIPS ── */
+.tip-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 14px;
+  margin-bottom: 10px; transition: border-color 0.15s;
+}
+.tip-card:hover { border-color: var(--border2); }
+.tip-num {
+  width: 24px; height: 24px; border-radius: 7px;
+  background: var(--blue-dim); color: #fff;
+  font-size: 0.72rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; margin-bottom: 8px;
+}
+.tip-title { font-size: 0.85rem; font-weight: 600; color: var(--text); margin-bottom: 5px; }
+.tip-body  { font-size: 0.76rem; color: var(--text2); line-height: 1.6; }
+
+/* ── TOAST ── */
+.toast-wrap { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
+.toast {
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: var(--radius); padding: 10px 14px;
+  font-size: 0.8rem; color: var(--text);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  animation: toast-in 0.2s ease; pointer-events: all;
+  display: flex; align-items: center; gap: 7px; max-width: 280px;
+}
+@keyframes toast-in  { from{opacity:0;transform:translateY(7px)} to{opacity:1;transform:none} }
+.toast.fade-out { animation: toast-out 0.3s ease forwards; }
+@keyframes toast-out { to{opacity:0;transform:translateY(7px)} }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1100px) {
+  .workspace { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; height: auto; overflow: visible; }
+  body { overflow: auto; height: auto; }
+  .shell { height: auto; overflow: visible; }
+  .col { border-right: none; border-bottom: 1px solid var(--border); min-height: 500px; }
+  .col:last-child { border-bottom: none; }
+}
+@media (max-width: 680px) {
+  .workspace { grid-template-columns: 1fr; }
+  .appl-grid { grid-template-columns: repeat(4, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ══ TOPBAR ══ -->
+  <header class="topbar">
+    <div class="logo">Calling Agent Dashboard</div>
+    <div class="topbar-badge">
+      <div class="status-dot"></div>
+      <span class="status-label">Live</span>
+      <span class="clock" id="clock">--:--:--</span>
+    </div>
+  </header>
+
+  <!-- ══ WORKSPACE ══ -->
+  <div class="workspace">
+
+    <!-- ═══════════════════════════
+         COL 1 — CALL SCRIPTS
+    ════════════════════════════ -->
+    <div class="col">
+      <div class="col-header">
+        <span>📞</span>
+        <span class="col-header-title">Call Scripts</span>
+      </div>
+      <div class="col-body">
+
+        <div class="script-tabs">
+          <button class="script-tab active" onclick="switchScript(0)">📞 Live Call</button>
+          <button class="script-tab" onclick="switchScript(1)">🔁 Follow-Up</button>
+          <button class="script-tab" onclick="switchScript(2)">💬 SMS</button>
+        </div>
+
+        <!-- SCRIPT 1 -->
+        <div class="script-pane active" id="spane-0">
+          <div class="card">
+            <div class="card-title"><div class="dot" style="background:var(--blue)"></div> Script 1 — Inbound Customer Call <span class="tag tag-blue">Live</span></div>
+            <p style="font-size:0.77rem;color:var(--text2);margin-bottom:12px;">New inbound call flow. Listen first, collect info naturally, close with two options.</p>
+
+            <div class="step"><div class="step-head open" onclick="toggleStep(this)"><div class="step-num">1</div><span class="step-label">Greeting</span><span class="step-chevron">▾</span></div>
+            <div class="step-body open">
+              <div class="say-line">Thank you for calling ApexPro Appliance Repair. My name is [Your Name]. How can I help you today?</div>
+              <div class="note-line">Listen completely. Do NOT interrupt. Let them fully describe the problem.</div>
+            </div></div>
+
+            <div class="step"><div class="step-head" onclick="toggleStep(this)"><div class="step-num">2</div><span class="step-label">Acknowledge + Bridge to Booking</span><span class="step-chevron">▾</span></div>
+            <div class="step-body">
+              <div class="say-line">Got it — we can definitely get a technician out to take a look at that. Let me grab a few quick details to get you set up.</div>
+              <div class="note-line">This signals you are already moving toward booking — not stalling.</div>
+            </div></div>
+
+            <div class="step"><div class="step-head" onclick="toggleStep(this)"><div class="step-num">3</div><span class="step-label">Info Collection</span><span class="step-chevron">▾</span></div>
+            <div class="step-body">
+              <div class="note-line">Ask one at a time. Natural and conversational — not a checklist.</div>
+              <div class="say-line">Can I start with your name?</div>
+              <div class="say-line">And the best number to reach you?</div>
+              <div class="say-line">What's the service address?</div>
+              <div class="say-line">Which appliance is it — washer, dryer, refrigerator, dishwasher?</div>
+              <div class="say-line">What brand?</div>
+              <div class="say-line">Do you happen to have the model number? It's usually on a sticker inside the door or on the back — no problem if not.</div>
+              <div class="say-line">And what's it doing, or not doing?</div>
+            </div></div>
+
+            <div class="step"><div class="step-head" onclick="toggleStep(this)"><div class="step-num">4</div><span class="step-label">Objection Handling</span><span class="step-chevron">▾</span></div>
+            <div class="step-body">
+              <div class="objection">
+                <div class="obj-trigger">🔴 "How much will it cost?"</div>
+                <div class="obj-response">We can't give an exact price over the phone because the same symptom can have different causes. The technician will inspect it and give you the full repair options and pricing right there — before any work starts.</div>
+              </div>
+              <div class="objection">
+                <div class="obj-trigger">🔴 "What's the diagnostic fee?"</div>
+                <div class="obj-response">Our diagnostic visit is $75. And if you decide to move forward with the repair, that fee is completely waived — you only pay it if you choose not to proceed.</div>
+              </div>
+              <div class="objection">
+                <div class="obj-trigger">🔴 "$75 is too expensive."</div>
+                <div class="obj-response">I completely understand. Appliance problems can have several causes and we want to make sure we give you the right solution. The technician will do a full inspection and explain exactly what's wrong before anything is done. And if you move forward, the $75 is waived.</div>
+              </div>
+              <div class="objection">
+                <div class="obj-trigger">🔴 Address is outside service area</div>
+                <div class="obj-response">I'm sorry — at this time we don't service that area. If our coverage expands in the future, we'd be happy to help.</div>
+              </div>
+            </div></div>
+
+            <div class="step"><div class="step-head" onclick="toggleStep(this)"><div class="step-num">5</div><span class="step-label">Scheduling Close — Two-Option Method</span><span class="step-chevron">▾</span></div>
+            <div class="step-body">
+              <div class="note-line">ALWAYS offer two specific options. Never ask open-ended "when are you free?"</div>
+              <div class="say-line">Let me check availability... We have [Day A — e.g. Wednesday morning] or [Day B — e.g. Friday afternoon]. Which one works better for you?</div>
+              <div class="arrow-line">If hesitant: "I can pencil you in tentatively — easy to reschedule if something comes up."</div>
+              <div class="arrow-line">If they want to think: "Of course. Just keep in mind our slots do fill up — sooner is better if the appliance is causing problems."</div>
+            </div></div>
+
+            <div class="step"><div class="step-head" onclick="toggleStep(this)"><div class="step-num">6</div><span class="step-label">Confirm + Close</span><span class="step-chevron">▾</span></div>
+            <div class="step-body">
+              <div class="say-line">Perfect. So I have you scheduled for [Day], [Date], [morning/afternoon]. You'll receive a confirmation. Is there anything else before I let you go?</div>
+              <div class="say-line">Great, [Name]. We look forward to helping you. Have a good day!</div>
+              <div class="note-line">Always repeat the appointment back word-for-word. Reduces no-shows.</div>
+            </div></div>
+          </div>
+        </div>
+
+        <!-- SCRIPT 2 -->
+        <div class="script-pane" id="spane-1">
+          <div class="card">
+            <div class="card-title"><div class="dot" style="background:var(--orange)"></div> Script 2 — Follow-Up Calls <span class="tag tag-orange">Follow-Up</span></div>
+            <p style="font-size:0.77rem;color:var(--text2);margin-bottom:12px;">Match the scenario to the right script.</p>
+
+            <div class="step"><div class="step-head" onclick="toggleStep(this)"><div class="step-num">A</div><span class="step-label">Missed / Disconnected Call</span><span class="step-chevron">▾</span></div>
+            <div class="step-body">
+              <div class="say-line">Hello, this is [Name] from ApexPro Appliance Repair. We were speaking earlier but the call got disconnected — I just wanted to follow up and see if you still need service for your appliance. Feel free to call us back at [number], or I can try you again shortly.</div>
+            </div></div>
+
+            <div class="step"><div class="step-head" onclick="toggleStep(this)"><div class="step-num">B</div><span class="step-label">Text Lead — Hasn't Booked Yet</span><span class="step-chevron">▾</span></div>
+            <div class="step-body">
+              <div class="say-line">Hello, this is [Name] from ApexPro Appliance Repair. I received your message about your [appliance] issue. I wanted to give you a quick call to help get that taken care of. Are you still looking for repair service?</div>
+              <div class="arrow-line">Yes → Move to scheduling close (two-option method).</div>
+              <div class="arrow-line">Hesitant → "No rush at all. I just want to make sure we get to you before it turns into a bigger issue. What would make it easier to move forward?"</div>
+            </div></div>
+
+            <div class="step" style="border:1px solid rgba(234,179,8,0.3);border-radius:var(--radius);">
+              <div class="step-head" onclick="toggleStep(this)" style="background:rgba(234,179,8,0.07);">
+                <div class="step-num" style="background:var(--yellow);color:#000;">C</div>
+                <span class="step-label">Said "I'll Call Back" — Never Did <span class="tag tag-yellow" style="margin-left:6px;">Most Common</span></span>
+                <span class="step-chevron">▾</span>
+              </div>
+              <div class="step-body" style="border-color:var(--yellow);">
+                <div class="say-line">Hi [Name], this is [Name] from ApexPro Appliance Repair. You reached out to us about your [appliance] a little while back. I just wanted to follow up and see if you still needed that taken care of, or if there were any questions I could answer for you.</div>
+                <div class="arrow-line">Still interested → "Great. We have [Option A] or [Option B] this week — which works better?"</div>
+              </div>
+            </div>
+
+            <div style="height:8px"></div>
+
+            <div class="step"><div class="step-head" onclick="toggleStep(this)"><div class="step-num">D</div><span class="step-label">Previously Quoted — Didn't Book</span><span class="step-chevron">▾</span></div>
+            <div class="step-body">
+              <div class="say-line">Hi [Name], this is [Name] from ApexPro. We spoke earlier about your [appliance]. I just wanted to check in — did you have any questions about the diagnostic visit, or would you like to go ahead and get it scheduled?</div>
+            </div></div>
+
+            <div class="step"><div class="step-head" onclick="toggleStep(this)"><div class="step-num">E</div><span class="step-label">Part Ordered — Ready for Completion</span><span class="step-chevron">▾</span></div>
+            <div class="step-body">
+              <div class="say-line">Hi [Name], this is [Name] from ApexPro Appliance Repair. Good news — your part has arrived and we're ready to complete the repair. What day works best to get the technician back out to you?</div>
+            </div></div>
+          </div>
+        </div>
+
+        <!-- SCRIPT 3 -->
+        <div class="script-pane" id="spane-2">
+          <div class="card">
+            <div class="card-title"><div class="dot" style="background:var(--green)"></div> Script 3 — Text / SMS Messages <span class="tag tag-green">SMS</span></div>
+            <p style="font-size:0.77rem;color:var(--text2);margin-bottom:12px;">Keep texts short. One message, one action. Always include the business name.</p>
+
+            <div class="step"><div class="step-head open" onclick="toggleStep(this)"><div class="step-num">1</div><span class="step-label">First Reply to Inbound Text Lead</span><span class="step-chevron">▾</span></div>
+            <div class="step-body open">
+              <div class="say-line">Hi [Name]! This is [Your Name] from ApexPro Appliance Repair. Thanks for reaching out! Can you tell me which appliance is giving you trouble and your zip code? I'll check technician availability for you right away. 🔧</div>
+              <div class="note-line">Reply within 5 minutes. Speed is the #1 conversion factor for text leads.</div>
+            </div></div>
+
+            <div class="step"><div class="step-head" onclick="toggleStep(this)"><div class="step-num">2</div><span class="step-label">Appointment Confirmation Text</span><span class="step-chevron">▾</span></div>
+            <div class="step-body">
+              <div class="say-line">Hi [Name], this is ApexPro Appliance Repair confirming your appointment on [Day], [Date] in the [morning/afternoon]. Our technician will call you 30 min before arrival. Questions? Reply or call us at [number].</div>
+            </div></div>
+
+            <div class="step"><div class="step-head" onclick="toggleStep(this)"><div class="step-num">3</div><span class="step-label">Follow-Up Text — Hasn't Booked</span><span class="step-chevron">▾</span></div>
+            <div class="step-body">
+              <div class="say-line">Hi [Name], this is ApexPro Appliance Repair following up on your [appliance] issue. We'd love to help — are you still looking for repair service? Reply YES and I'll get you scheduled right away!</div>
+            </div></div>
+
+            <div class="step"><div class="step-head" onclick="toggleStep(this)"><div class="step-num">4</div><span class="step-label">Appointment Reminder (Day Before)</span><span class="step-chevron">▾</span></div>
+            <div class="step-body">
+              <div class="say-line">Hi [Name]! Quick reminder — your ApexPro technician is scheduled for tomorrow, [Day] [morning/afternoon]. Reply CONFIRM to confirm or call [number] to reschedule. See you then!</div>
+            </div></div>
+
+            <div class="step"><div class="step-head" onclick="toggleStep(this)"><div class="step-num">5</div><span class="step-label">Diagnostic Fee Reminder Text</span><span class="step-chevron">▾</span></div>
+            <div class="step-body">
+              <div class="say-line">Hi [Name], just a reminder that today's diagnostic visit is $75. If you decide to proceed with the repair, that fee is fully waived. Our tech will explain all options before any work begins. See you soon!</div>
+            </div></div>
+
+            <div class="step"><div class="step-head" onclick="toggleStep(this)"><div class="step-num">6</div><span class="step-label">Part Ready — Schedule Completion</span><span class="step-chevron">▾</span></div>
+            <div class="step-body">
+              <div class="say-line">Good news, [Name]! 🎉 Your part for the [appliance] has arrived. We're ready to complete your repair. Reply with your preferred day this week and we'll get it scheduled!</div>
+            </div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════
+         COL 2 — INTAKE FORM
+    ════════════════════════════ -->
+    <div class="col">
+      <div class="col-header">
+        <span>📋</span>
+        <span class="col-header-title">Client Intake Form</span>
+        <span class="saved-badge" id="saved-badge">✓ Copied!</span>
+      </div>
+      <div class="col-body">
+
+        <!-- Progress -->
+        <div style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <span style="font-size:0.68rem;color:var(--text3);">Completion</span>
+            <span style="font-size:0.68rem;color:var(--text2);" id="progress-pct">0% — 0 of 9</span>
+          </div>
+          <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+        </div>
+
+        <!-- ① APPLIANCE PICKER -->
+        <div class="picker-section">
+          <div class="picker-label">① Select Appliance</div>
+          <div class="appl-grid">
+            <div class="appl-btn" data-val="Washer"      onclick="selectAppliance(this)">🫧<span>Washer</span></div>
+            <div class="appl-btn" data-val="Dryer"       onclick="selectAppliance(this)">💨<span>Dryer</span></div>
+            <div class="appl-btn" data-val="Refrigerator" onclick="selectAppliance(this)">❄️<span>Fridge</span></div>
+            <div class="appl-btn" data-val="Dishwasher"  onclick="selectAppliance(this)">🍽️<span>Dishwasher</span></div>
+            <div class="appl-btn" data-val="Oven / Range" onclick="selectAppliance(this)">🍳<span>Oven/Range</span></div>
+            <div class="appl-btn" data-val="Microwave"   onclick="selectAppliance(this)">📡<span>Microwave</span></div>
+            <div class="appl-btn" data-val="Freezer"     onclick="selectAppliance(this)">🧊<span>Freezer</span></div>
+            <div class="appl-btn" data-val="Other"       onclick="selectAppliance(this)">⚙️<span>Other</span></div>
+          </div>
+        </div>
+
+        <!-- ② SERVICE PICKER -->
+        <div class="picker-section">
+          <div class="picker-label">② Select Service</div>
+          <div class="service-grid">
+            <div class="svc-btn" data-val="Repair"       onclick="selectService(this)">🔧 Repair</div>
+            <div class="svc-btn" data-val="Installation" onclick="selectService(this)">🔌 Installation</div>
+          </div>
+        </div>
+
+        <!-- ZIP / TECH ASSIGNMENT (auto-shows when address has ZIP) -->
+        <div class="zip-row" id="zip-row" style="display:none;">
+          <span class="zip-label">📍 Tech assignment:</span>
+          <span id="zip-badge"></span>
+          <span id="zip-note" style="font-size:0.68rem;color:var(--text3);margin-left:4px;"></span>
+        </div>
+
+        <!-- CUSTOMER INFO -->
+        <div class="form-section">🧑 Customer Information</div>
+        <div class="form-grid">
+          <div class="field">
+            <label>Full Name <span class="required">*</span></label>
+            <input type="text" id="f-name" placeholder="John Smith" oninput="formChanged()" />
+          </div>
+          <div class="field">
+            <label>Best Phone <span class="required">*</span></label>
+            <input type="tel" id="f-phone" placeholder="(555) 000-0000" oninput="formChanged()" />
+          </div>
+          <div class="field span2">
+            <label>Service Address <span class="required">*</span></label>
+            <input type="text" id="f-address" placeholder="123 Main St, Houston, TX 77005" oninput="onAddressChange()" />
+          </div>
+        </div>
+
+        <!-- APPLIANCE DETAILS -->
+        <div class="form-section">🔧 Appliance Details</div>
+        <div class="form-grid">
+          <div class="field">
+            <label>Appliance Type <span class="required">*</span></label>
+            <select id="f-appliance" onchange="formChanged()">
+              <option value="">— Select —</option>
+              <option>Washer</option>
+              <option>Dryer</option>
+              <option>Refrigerator</option>
+              <option>Dishwasher</option>
+              <option>Oven / Range</option>
+              <option>Microwave</option>
+              <option>Freezer</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Brand <span class="required">*</span></label>
+            <input type="text" id="f-brand" placeholder="Whirlpool, Samsung, LG…" oninput="formChanged()" />
+          </div>
+          <div class="field">
+            <label>Model Number <span style="color:var(--text3);font-weight:400;">(if available)</span></label>
+            <input type="text" id="f-model" placeholder="e.g. WTW5000DW" oninput="formChanged()" />
+          </div>
+          <div class="field">
+            <label>Technician <span class="required">*</span></label>
+            <select id="f-tech" onchange="formChanged()">
+              <option value="">— Verify service area —</option>
+              <option>Alex</option>
+              <option>Andrew</option>
+            </select>
+          </div>
+          <div class="field span2">
+            <label>Problem Description <span class="required">*</span></label>
+            <textarea id="f-problem" placeholder="What is the appliance doing or not doing?" rows="3" oninput="formChanged()"></textarea>
+          </div>
+        </div>
+
+        <!-- APPOINTMENT -->
+        <div class="form-section">📅 Appointment</div>
+        <div class="form-grid">
+          <div class="field">
+            <label>Preferred Date <span class="required">*</span></label>
+            <input type="date" id="f-date" onchange="formChanged()" />
+          </div>
+          <div class="field">
+            <label>Time Slot <span class="required">*</span></label>
+            <select id="f-time" onchange="formChanged()">
+              <option value="">— Select —</option>
+              <option>Morning (8am–12pm)</option>
+              <option>Afternoon (12pm–5pm)</option>
+            </select>
+          </div>
+          <div class="field span2">
+            <label>Additional Notes</label>
+            <textarea id="f-notes" placeholder="Gate code, dogs, access instructions…" rows="2" oninput="formChanged()"></textarea>
+          </div>
+        </div>
+
+        <!-- VERIFY BEFORE ENDING CALL -->
+        <div class="form-section">✅ Before Ending the Call</div>
+        <div class="verify-list">
+          <div class="verify-item" onclick="toggleVerify(this)"><div class="verify-check">✓</div><span>Service address confirmed in Alex's or Andrew's area</span></div>
+          <div class="verify-item" onclick="toggleVerify(this)"><div class="verify-check">✓</div><span>Appointment day and time repeated back word-for-word</span></div>
+          <div class="verify-item" onclick="toggleVerify(this)"><div class="verify-check">✓</div><span>Customer told: $75 diagnostic fee is waived if repair proceeds</span></div>
+          <div class="verify-item" onclick="toggleVerify(this)"><div class="verify-check">✓</div><span>Customer has business phone number to reschedule</span></div>
+        </div>
+
+        <!-- HCP AFTER CALL -->
+        <div class="form-section">📲 Housecall Pro — After the Call</div>
+        <div class="verify-list">
+          <div class="verify-item" onclick="toggleVerify(this)"><div class="verify-check">✓</div><span>Job created via CRM → New → Job</span></div>
+          <div class="verify-item" onclick="toggleVerify(this)"><div class="verify-check">✓</div><span>Correct technician assigned (Alex or Andrew by ZIP/area)</span></div>
+          <div class="verify-item" onclick="toggleVerify(this)"><div class="verify-check">✓</div><span>Job status set to: New / Scheduled</span></div>
+          <div class="verify-item" onclick="toggleVerify(this)"><div class="verify-check">✓</div><span>Notes added: appliance type, brand, model, problem description</span></div>
+          <div class="verify-item" onclick="toggleVerify(this)"><div class="verify-check">✓</div><span>Anything unusual? Reported in the group immediately</span></div>
+        </div>
+
+        <!-- ACTIONS -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;padding-bottom:8px;">
+          <button class="btn btn-primary" onclick="copyCRM()">📋 Copy for CRM</button>
+          <button class="btn btn-ghost"   onclick="clearForm()">🗑️ Clear Form</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════
+         COL 3 — VOICE TRANSCRIBER
+    ════════════════════════════ -->
+    <div class="col">
+      <div class="col-header">
+        <span>🎙️</span>
+        <span class="col-header-title">Voice Transcriber</span>
+        <div class="rec-indicator" style="margin-left:auto;">
+          <div class="rec-ring" id="rec-ring"></div>
+          <span id="rec-label" style="font-size:0.72rem;color:var(--text3);">Idle</span>
+        </div>
+        <span class="timer" id="timer" style="margin-left:8px;">00:00</span>
+      </div>
+      <div class="col-body" id="voice-panel">
+
+        <div class="notice">
+          ⚠️ <div style="font-size:0.72rem;"><strong>How to use:</strong> Put call on speaker or use a headset so the mic captures both voices. Works best in Chrome or Edge.</div>
+        </div>
+
+        <div class="voice-controls">
+          <button class="btn btn-success" id="btn-start" onclick="startTranscription()">▶ Start</button>
+          <button class="btn btn-danger"  id="btn-stop"  onclick="stopTranscription()" disabled>⏹ Stop</button>
+          <button class="btn btn-ghost"   onclick="clearTranscript()">🗑</button>
+          <button class="autofill-btn"    onclick="autoFillForm()">⚡ Auto-fill Form</button>
+        </div>
+
+        <label style="font-size:0.75rem;color:var(--text2);display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:10px;">
+          <input type="checkbox" id="filter-customer" style="accent-color:var(--blue);" />
+          Customer speech only
+        </label>
+
+        <div class="visualizer-wrap">
+          <div class="visualizer" id="visualizer"></div>
+        </div>
+
+        <div class="transcript-label">
+          <span>📝 Live Transcript</span>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span style="font-size:0.68rem;color:var(--text3);" id="word-count">0 words</span>
+            <button class="btn btn-ghost" style="padding:2px 8px;font-size:0.7rem;" onclick="copyTranscript()">Copy</button>
+          </div>
+        </div>
+        <div class="transcript-box empty" id="transcript-box"></div>
+
+        <!-- Extracted info -->
+        <div style="margin-top:12px;">
+          <div style="font-size:0.67rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:7px;">⚡ Extracted Customer Info</div>
+          <div id="extracted-info" style="font-size:0.8rem;color:var(--text3);font-style:italic;">No transcript yet.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════
+         COL 4 — PRO TIPS
+    ════════════════════════════ -->
+    <div class="col">
+      <div class="col-header">
+        <span>💡</span>
+        <span class="col-header-title">Pro Tips</span>
+      </div>
+      <div class="col-body">
+
+        <div class="tip-card"><div class="tip-num">1</div><div class="tip-title">Two Options — Never Open Questions</div><div class="tip-body">"What day works for you?" invites delay. "We have Wednesday morning or Friday afternoon — which is better?" forces a yes/no. This single change books more hesitant callers.</div></div>
+        <div class="tip-card"><div class="tip-num">2</div><div class="tip-title">Lead with the Fee Waiver</div><div class="tip-body">Say "if you move forward with the repair, the fee is completely waived" before saying "$75." Customers anchor to the benefit first. The cost lands smaller.</div></div>
+        <div class="tip-card"><div class="tip-num">3</div><div class="tip-title">Soft Urgency — Honest and Effective</div><div class="tip-body">"Our technician slots do fill up, especially toward the end of the week." This is true and nudges hesitant customers to decide without feeling pressured.</div></div>
+        <div class="tip-card"><div class="tip-num">4</div><div class="tip-title">Repeat the Appointment Back — Every Time</div><div class="tip-body">"So I have you down for Thursday morning — does that still work?" confirms accuracy, creates verbal commitment, and reduces no-shows. Never skip this step.</div></div>
+        <div class="tip-card"><div class="tip-num">5</div><div class="tip-title">Acknowledge Before Explaining</div><div class="tip-body">When a customer is frustrated, the instinct is to explain policy. That makes it worse. Say "I completely understand" first, pause, then give the explanation.</div></div>
+        <div class="tip-card"><div class="tip-num">6</div><div class="tip-title">Log Notes in Housecall Pro Immediately</div><div class="tip-body">Write appliance type, brand, problem, and notes while still on the call or within 60 seconds of hanging up. Technicians rely on these notes.</div></div>
+        <div class="tip-card"><div class="tip-num">7</div><div class="tip-title">Respond to Text Leads Within 5 Minutes</div><div class="tip-body">Speed of response is the #1 conversion factor for text leads. 5 minutes vs. 30 minutes is often the difference between booking and losing the lead.</div></div>
+        <div class="tip-card"><div class="tip-num">8</div><div class="tip-title">When Unsure — Ask the Group First</div><div class="tip-body">A wrong area assignment wastes a technician's time. When in doubt, tell the customer "Let me confirm that for you quickly" and check before committing.</div></div>
+
+      </div>
+    </div>
+
+  </div><!-- /workspace -->
+</div><!-- /shell -->
+
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+/* ── CLOCK ── */
+function updateClock() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('en-US', { hour12: true });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+/* ── ZIP DATA ── */
+const ALEX_ZIPS = new Set([
+  '77005','77021','77025','77030','77031','77033','77035','77036',
+  '77045','77047','77048','77051','77053','77054','77071','77072',
+  '77074','77081','77083','77085','77096','77099','77401','77406',
+  '77407','77417','77459','77461','77469','77471','77477','77478',
+  '77479','77489','77498','77545','77578','77581','77583','77584'
+]);
+const ANDREW_ZIPS = new Set([
+  '77006','77007','77008','77014','77018','77019','77024','77027',
+  '77038','77040','77041','77042','77043','77046','77055','77056',
+  '77057','77063','77064','77065','77066','77067','77068','77069',
+  '77070','77077','77079','77080','77082','77084','77086','77088',
+  '77091','77092','77094','77095','77098','77423','77429','77433',
+  '77441','77449','77450','77466','77493','77494'
+]);
+
+function extractZip(str) {
+  const m = str.match(/\b(7[0-9]{4})\b/);
+  return m ? m[1] : null;
+}
+
+function assignTechByZip(zip) {
+  if (ALEX_ZIPS.has(zip))   return { tech: 'Alex',   type: 'exact' };
+  if (ANDREW_ZIPS.has(zip)) return { tech: 'Andrew', type: 'exact' };
+
+  if (!zip.startsWith('77')) return { tech: null, type: 'outside' };
+
+  const zipNum = parseInt(zip);
+  let bestTech = null, minD = Infinity;
+  for (const z of ALEX_ZIPS) {
+    const d = Math.abs(parseInt(z) - zipNum);
+    if (d < minD) { minD = d; bestTech = 'Alex'; }
+  }
+  for (const z of ANDREW_ZIPS) {
+    const d = Math.abs(parseInt(z) - zipNum);
+    if (d < minD) { minD = d; bestTech = 'Andrew'; }
+  }
+  return bestTech ? { tech: bestTech, type: 'approx' } : null;
+}
+
+/* ── ADDRESS → ZIP AUTO-ASSIGN ── */
+function onAddressChange() {
+  formChanged();
+  const zip = extractZip(document.getElementById('f-address').value);
+  updateZipAssign(zip);
+}
+
+function updateZipAssign(zip) {
+  const row   = document.getElementById('zip-row');
+  const badge = document.getElementById('zip-badge');
+  const note  = document.getElementById('zip-note');
+
+  if (!zip) { row.style.display = 'none'; return; }
+
+  row.style.display = 'flex';
+  const result = assignTechByZip(zip);
+
+  if (!result || result.type === 'outside') {
+    badge.className = 'tech-badge outside';
+    badge.textContent = `✗ ZIP ${zip}`;
+    note.textContent = '— outside service area';
+    return;
+  }
+
+  const techSel = document.getElementById('f-tech');
+  techSel.value = result.tech;
+  techSel.classList.add('filled');
+  formChanged();
+
+  if (result.type === 'exact') {
+    badge.className = 'tech-badge exact';
+    badge.innerHTML = `✓ <strong>${result.tech}</strong>`;
+    note.textContent = `— ZIP ${zip} in service area`;
+    showToast(`📍 ZIP ${zip} → ${result.tech} (exact match)`, 'green');
+  } else {
+    badge.className = 'tech-badge approx';
+    badge.innerHTML = `≈ <strong>${result.tech}</strong>`;
+    note.textContent = `— ZIP ${zip} nearest area · verify`;
+    showToast(`📍 ZIP ${zip} → ${result.tech} (nearest area — verify)`, 'orange');
+  }
+}
+
+/* ── APPLIANCE PICKER ── */
+let selectedAppliance = '';
+let selectedService   = '';
+
+function selectAppliance(el) {
+  document.querySelectorAll('.appl-btn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+  selectedAppliance = el.dataset.val;
+  const sel = document.getElementById('f-appliance');
+  sel.value = selectedAppliance;
+  sel.classList.add('filled');
+  updateProblemPrefix();
+  formChanged();
+}
+
+function selectService(el) {
+  document.querySelectorAll('.svc-btn').forEach(b => {
+    b.classList.remove('sel-repair', 'sel-install');
+  });
+  selectedService = el.dataset.val;
+  el.classList.add(selectedService === 'Repair' ? 'sel-repair' : 'sel-install');
+  updateProblemPrefix();
+  formChanged();
+}
+
+function updateProblemPrefix() {
+  if (!selectedAppliance || !selectedService) return;
+  const prob = document.getElementById('f-problem');
+  const prefix = `[${selectedAppliance} — ${selectedService}] `;
+  if (!prob.value || /^\[.+\] ?$/.test(prob.value)) {
+    prob.value = prefix;
+    prob.classList.add('filled');
+  }
+}
+
+/* ── SCRIPT TABS ── */
+function switchScript(idx) {
+  document.querySelectorAll('.script-tab').forEach((t,i)  => t.classList.toggle('active', i===idx));
+  document.querySelectorAll('.script-pane').forEach((p,i) => p.classList.toggle('active', i===idx));
+}
+
+/* ── STEP ACCORDION ── */
+function toggleStep(head) {
+  const isOpen = head.classList.contains('open');
+  head.classList.toggle('open', !isOpen);
+  head.nextElementSibling.classList.toggle('open', !isOpen);
+}
+
+/* ── VERIFY CHECKLIST ── */
+function toggleVerify(item) {
+  item.classList.toggle('done');
+}
+
+/* ── FORM PROGRESS ── */
+const REQUIRED = ['f-name','f-phone','f-address','f-appliance','f-brand','f-problem','f-tech','f-date','f-time'];
+
+function formChanged() {
+  let filled = 0;
+  REQUIRED.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.value.trim()) { filled++; el.classList.add('filled'); }
+    else { el && el.classList.remove('filled'); }
+  });
+  const pct = Math.round(filled / REQUIRED.length * 100);
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-pct').textContent = pct + '% — ' + filled + ' of ' + REQUIRED.length;
+}
+
+/* ── COPY FOR CRM ── */
+function copyCRM() {
+  const v   = id => (document.getElementById(id)||{}).value || '';
+  const svc = selectedService ? ` (${selectedService})` : '';
+  const lines = [
+    '=== APEXPRO CLIENT INTAKE ===',
+    `Date: ${new Date().toLocaleString()}`,
+    '',
+    '--- CUSTOMER ---',
+    `Name: ${v('f-name')}`,
+    `Phone: ${v('f-phone')}`,
+    `Address: ${v('f-address')}`,
+    '',
+    '--- APPLIANCE ---',
+    `Type: ${v('f-appliance')}${svc}`,
+    `Brand: ${v('f-brand')}`,
+    `Model: ${v('f-model') || 'N/A'}`,
+    `Problem: ${v('f-problem')}`,
+    '',
+    '--- APPOINTMENT ---',
+    `Date: ${v('f-date')}`,
+    `Time: ${v('f-time')}`,
+    `Technician: ${v('f-tech')}`,
+    '',
+    `Notes: ${v('f-notes') || 'None'}`,
+    '==========================',
+  ];
+  navigator.clipboard.writeText(lines.join('\n'))
+    .then(() => {
+      const badge = document.getElementById('saved-badge');
+      badge.classList.add('show');
+      setTimeout(() => badge.classList.remove('show'), 2500);
+      showToast('✓ CRM notes copied to clipboard', 'green');
+    })
+    .catch(() => showToast('Could not copy — check browser permissions', 'red'));
+}
+
+function clearForm() {
+  ['f-name','f-phone','f-address','f-appliance','f-brand','f-model',
+   'f-tech','f-date','f-time','f-problem','f-notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = ''; el.classList.remove('filled'); }
+  });
+  document.querySelectorAll('.appl-btn.sel').forEach(b => b.classList.remove('sel'));
+  document.querySelectorAll('.svc-btn').forEach(b => b.classList.remove('sel-repair','sel-install'));
+  document.querySelectorAll('.verify-item.done').forEach(el => el.classList.remove('done'));
+  document.getElementById('zip-row').style.display = 'none';
+  selectedAppliance = '';
+  selectedService   = '';
+  formChanged();
+  showToast('Form cleared', 'blue');
+}
+
+/* ── VOICE TRANSCRIBER ── */
+let recognition   = null;
+let isListening   = false;
+let timerInterval = null;
+let seconds       = 0;
+let finalTranscript = '';
+let visInterval   = null;
+
+(function buildVis() {
+  const vis = document.getElementById('visualizer');
+  for (let i = 0; i < 55; i++) {
+    const b = document.createElement('div');
+    b.className = 'vis-bar';
+    vis.appendChild(b);
+  }
+})();
+
+function animateVis(active) {
+  const bars = document.querySelectorAll('.vis-bar');
+  if (visInterval) { clearInterval(visInterval); visInterval = null; }
+  if (!active) {
+    bars.forEach(b => b.style.height = '4px');
+    return;
+  }
+  visInterval = setInterval(() => {
+    bars.forEach(b => {
+      const h = Math.random() * 38 + 4;
+      b.style.height = h + 'px';
+      b.style.background = h > 28 ? 'var(--green)' : h > 14 ? 'var(--blue)' : 'var(--border2)';
+    });
+  }, 80);
+}
+
+function updateTimer() {
+  seconds++;
+  document.getElementById('timer').textContent =
+    String(Math.floor(seconds/60)).padStart(2,'0') + ':' + String(seconds%60).padStart(2,'0');
+}
+
+function startTranscription() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('❌ Not supported. Use Chrome or Edge.', 'red'); return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+  recognition.maxAlternatives = 1;
+
+  const box = document.getElementById('transcript-box');
+  box.classList.remove('empty');
+
+  recognition.onresult = (event) => {
+    let interim = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const t = event.results[i][0].transcript;
+      if (event.results[i].isFinal) {
+        const safe = t.trim().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        const filter = document.getElementById('filter-customer').checked;
+        const line = filter
+          ? `<span class="final"><span class="speaker-label">CUSTOMER</span>${safe}\n</span>`
+          : `<span class="final">${safe}\n</span>`;
+        finalTranscript += t.trim() + '\n';
+        box.insertAdjacentHTML('beforeend', line);
+        box.scrollTop = box.scrollHeight;
+        updateWordCount();
+      } else { interim = t; }
+    }
+    const interimEl = document.getElementById('interim-text');
+    if (interimEl) interimEl.textContent = interim;
+    else if (interim) {
+      const el = document.createElement('span');
+      el.id = 'interim-text'; el.className = 'interim'; el.textContent = interim;
+      box.appendChild(el); box.scrollTop = box.scrollHeight;
+    }
+  };
+
+  recognition.onerror = (e) => {
+    if (e.error === 'not-allowed') { showToast('❌ Mic access denied.', 'red'); stopTranscription(); }
+    else if (e.error !== 'no-speech') showToast('Mic error: ' + e.error, 'red');
+  };
+  recognition.onend = () => { if (isListening) recognition.start(); };
+
+  recognition.start();
+  isListening = true;
+  document.getElementById('btn-start').disabled = true;
+  document.getElementById('btn-stop').disabled  = false;
+  document.getElementById('rec-ring').classList.add('active');
+  document.getElementById('rec-label').textContent = 'Recording';
+  document.getElementById('voice-panel').classList.add('recording');
+  seconds = 0;
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  timerInterval = setInterval(updateTimer, 1000);
+  animateVis(true);
+  showToast('🎙️ Listening… speak now', 'green');
+}
+
+function stopTranscription() {
+  if (recognition) { recognition.stop(); recognition = null; }
+  isListening = false;
+  document.getElementById('btn-start').disabled = false;
+  document.getElementById('btn-stop').disabled  = true;
+  document.getElementById('rec-ring').classList.remove('active');
+  document.getElementById('rec-label').textContent = 'Stopped';
+  document.getElementById('voice-panel').classList.remove('recording');
+  clearInterval(timerInterval);
+  timerInterval = null;
+  animateVis(false);
+  const interim = document.getElementById('interim-text');
+  if (interim) interim.remove();
+  showToast('⏹ Transcription stopped', 'blue');
+  extractInfo();
+}
+
+function clearTranscript() {
+  finalTranscript = '';
+  const box = document.getElementById('transcript-box');
+  box.innerHTML = ''; box.classList.add('empty');
+  document.getElementById('word-count').textContent = '0 words';
+  document.getElementById('extracted-info').innerHTML = '<span style="color:var(--text3);font-style:italic;">No transcript yet.</span>';
+  seconds = 0;
+  document.getElementById('timer').textContent = '00:00';
+}
+
+function updateWordCount() {
+  const count = finalTranscript.trim().split(/\s+/).filter(Boolean).length;
+  document.getElementById('word-count').textContent = count + ' word' + (count !== 1 ? 's' : '');
+}
+
+function copyTranscript() {
+  if (!finalTranscript.trim()) { showToast('Nothing to copy yet', 'red'); return; }
+  navigator.clipboard.writeText(finalTranscript)
+    .then(() => showToast('✓ Transcript copied', 'green'))
+    .catch(() => showToast('Copy failed — check browser permissions', 'red'));
+}
+
+function extractInfo() {
+  if (!finalTranscript.trim()) return;
+  const txt = finalTranscript.toLowerCase();
+  const results = [];
+
+  const nameMatch = finalTranscript.match(/(?:my name is|i'm|this is|call me)\s+([A-Z][a-z]+(?: [A-Z][a-z]+)?)/i);
+  if (nameMatch) results.push({ label: 'Name',  value: nameMatch[1] });
+
+  const phoneMatch = finalTranscript.match(/\b(\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4})\b/);
+  if (phoneMatch) results.push({ label: 'Phone', value: phoneMatch[1] });
+
+  const appliances = ['washer','dryer','refrigerator','fridge','dishwasher','oven','microwave','freezer'];
+  for (const ap of appliances) {
+    if (txt.includes(ap)) {
+      results.push({ label: 'Appliance', value: ap === 'fridge' ? 'Refrigerator' : ap.charAt(0).toUpperCase()+ap.slice(1) });
+      break;
+    }
+  }
+
+  const brands = ['whirlpool','samsung','lg','ge','maytag','bosch','frigidaire','kenmore','electrolux','kitchenaid','amana','speed queen'];
+  for (const br of brands) {
+    if (txt.includes(br)) {
+      results.push({ label: 'Brand', value: br.charAt(0).toUpperCase()+br.slice(1) });
+      break;
+    }
+  }
+
+  const zipMatch = finalTranscript.match(/\b(\d{5})\b/);
+  if (zipMatch) results.push({ label: 'ZIP', value: zipMatch[1] });
+
+  const infoEl = document.getElementById('extracted-info');
+  if (results.length === 0) {
+    infoEl.innerHTML = '<span style="color:var(--text3);">No structured info detected yet.</span>'; return;
+  }
+  infoEl.innerHTML = results.map(r =>
+    `<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);">
+      <span style="color:var(--text3);font-size:0.7rem;font-weight:600;width:70px;flex-shrink:0;">${r.label}</span>
+      <span style="color:var(--text);font-size:0.78rem;">${r.value}</span>
+    </div>`
+  ).join('');
+}
+
+function autoFillForm() {
+  if (!finalTranscript.trim()) { showToast('No transcript yet — start a call first', 'red'); return; }
+  extractInfo();
+  const txt = finalTranscript.toLowerCase();
+
+  const nameMatch = finalTranscript.match(/(?:my name is|i'm|this is|call me)\s+([A-Z][a-z]+(?: [A-Z][a-z]+)?)/i);
+  if (nameMatch) setField('f-name', nameMatch[1]);
+
+  const phoneMatch = finalTranscript.match(/\b(\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4})\b/);
+  if (phoneMatch) setField('f-phone', phoneMatch[1]);
+
+  const appMap = { washer:'Washer', dryer:'Dryer', refrigerator:'Refrigerator',
+    fridge:'Refrigerator', dishwasher:'Dishwasher', oven:'Oven / Range',
+    microwave:'Microwave', freezer:'Freezer' };
+  for (const [key, val] of Object.entries(appMap)) {
+    if (txt.includes(key)) {
+      setSelectField('f-appliance', val);
+      const btn = document.querySelector(`.appl-btn[data-val="${val}"]`);
+      if (btn) selectAppliance(btn);
+      break;
+    }
+  }
+
+  const brands = ['Whirlpool','Samsung','LG','GE','Maytag','Bosch','Frigidaire','Kenmore','Electrolux','KitchenAid','Amana','Speed Queen'];
+  for (const b of brands) {
+    if (txt.includes(b.toLowerCase())) { setField('f-brand', b); break; }
+  }
+
+  const zipMatch = finalTranscript.match(/\b(7[0-9]{4})\b/);
+  if (zipMatch) updateZipAssign(zipMatch[1]);
+
+  if (!document.getElementById('f-problem').value) {
+    setField('f-problem', finalTranscript.trim().substring(0, 500));
+  }
+
+  formChanged();
+  showToast('⚡ Intake form auto-filled from transcript!', 'green');
+}
+
+function setField(id, val) {
+  const el = document.getElementById(id);
+  if (el && !el.value) el.value = val;
+}
+function setSelectField(id, val) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  for (const opt of el.options) {
+    if (opt.value === val || opt.text === val) { el.value = opt.value; break; }
+  }
+}
+
+/* ── TOAST ── */
+function showToast(msg, type = 'blue') {
+  const colors = { blue:'var(--blue)', green:'var(--green)', red:'var(--red)', orange:'var(--orange)' };
+  const wrap = document.getElementById('toast-wrap');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.style.borderLeftColor = colors[type] || colors.blue;
+  t.style.borderLeftWidth = '3px';
+  t.innerHTML = msg;
+  wrap.appendChild(t);
+  setTimeout(() => { t.classList.add('fade-out'); setTimeout(() => t.remove(), 300); }, 3000);
+}
+
+/* ── INIT ── */
+formChanged();
+</script>
+</body>
+</html>
