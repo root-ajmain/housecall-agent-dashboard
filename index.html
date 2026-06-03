@@ -824,8 +824,32 @@ body {
       </div>
       <div class="col-body" id="voice-panel">
 
-        <div class="notice">
-          ⚠️ <div style="font-size:0.72rem;"><strong>How to use:</strong> Put call on speaker or use a headset so the mic captures both voices. Works best in Chrome or Edge.</div>
+        <div class="notice" style="padding:10px 12px;">
+          <div style="font-size:0.72rem;">
+            <div style="font-weight:700;color:var(--text2);margin-bottom:7px;">Transcription Mode</div>
+            <div style="display:flex;gap:6px;margin-bottom:8px;">
+              <button onclick="setTransMode('mic')" id="mode-btn-mic"
+                style="flex:1;padding:5px 6px;font-size:0.7rem;font-family:var(--font);background:var(--blue);color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;">
+                🎤 My Mic
+              </button>
+              <button onclick="setTransMode('tab')" id="mode-btn-tab"
+                style="flex:1;padding:5px 6px;font-size:0.7rem;font-family:var(--font);background:var(--bg3);color:var(--text2);border:1px solid var(--border2);border-radius:4px;cursor:pointer;font-weight:600;">
+                🔊 Client Voice
+              </button>
+            </div>
+            <div id="mode-info-mic" style="color:var(--text3);font-size:0.69rem;">Captures your microphone. Use when both voices are near your mic.</div>
+            <div id="mode-info-tab" style="display:none;">
+              <div style="color:var(--text3);font-size:0.69rem;margin-bottom:6px;">
+                Captures audio from the dialer tab — <strong style="color:var(--text2);">client's voice only</strong>.<br>
+                Needs a free <strong style="color:var(--blue);">Deepgram</strong> API key →
+                <a href="https://deepgram.com" target="_blank" style="color:var(--blue);text-decoration:underline;">deepgram.com</a>
+                (45 hrs/mo free)
+              </div>
+              <input id="deepgram-key" type="password" placeholder="Paste Deepgram API key here…"
+                style="width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:4px;font-size:0.72rem;outline:none;"
+                oninput="saveDeepgramKey()" />
+            </div>
+          </div>
         </div>
 
         <div class="voice-controls">
@@ -871,6 +895,20 @@ body {
         <span class="col-header-title">Pro Tips</span>
       </div>
       <div class="col-body">
+
+        <!-- ── CALLBACK LIST ── -->
+        <div style="margin-bottom:14px;">
+          <div style="font-size:0.67rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:8px;">📞 Callback List</div>
+          <div style="display:flex;gap:5px;margin-bottom:7px;flex-wrap:wrap;">
+            <input id="cb-name" type="text" placeholder="Name (optional)"
+              style="flex:1;min-width:80px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:5px 7px;border-radius:4px;font-size:0.75rem;outline:none;font-family:var(--font);" />
+            <input id="cb-phone" type="tel" placeholder="Phone number *"
+              style="flex:1;min-width:100px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:5px 7px;border-radius:4px;font-size:0.75rem;outline:none;font-family:var(--font);" />
+            <button onclick="saveCallback()" class="btn btn-success" style="padding:4px 10px;font-size:0.75rem;white-space:nowrap;">Save</button>
+          </div>
+          <div id="callback-list" style="max-height:150px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;"></div>
+        </div>
+        <div style="border-top:1px solid var(--border);margin-bottom:14px;"></div>
 
         <div class="tip-card"><div class="tip-num">1</div><div class="tip-title">Two Options — Never Open Questions</div><div class="tip-body">"What day works for you?" invites delay. "We have Wednesday morning or Friday afternoon — which is better?" forces a yes/no. This single change books more hesitant callers.</div></div>
         <div class="tip-card"><div class="tip-num">2</div><div class="tip-title">Lead with the Fee Waiver</div><div class="tip-body">Say "if you move forward with the repair, the fee is completely waived" before saying "$75." Customers anchor to the benefit first. The cost lands smaller.</div></div>
@@ -1103,12 +1141,16 @@ function clearForm() {
 }
 
 /* ── VOICE TRANSCRIBER ── */
-let recognition   = null;
-let isListening   = false;
-let timerInterval = null;
-let seconds       = 0;
+let recognition     = null;
+let isListening     = false;
+let timerInterval   = null;
+let seconds         = 0;
 let finalTranscript = '';
-let visInterval   = null;
+let visInterval     = null;
+let transMode       = 'mic';
+let tabStream       = null;
+let tabRecorder     = null;
+let deepgramSocket  = null;
 
 (function buildVis() {
   const vis = document.getElementById('visualizer');
@@ -1141,7 +1183,75 @@ function updateTimer() {
     String(Math.floor(seconds/60)).padStart(2,'0') + ':' + String(seconds%60).padStart(2,'0');
 }
 
+function setTransMode(mode) {
+  transMode = mode;
+  const micBtn = document.getElementById('mode-btn-mic');
+  const tabBtn = document.getElementById('mode-btn-tab');
+  micBtn.style.background    = mode === 'mic' ? 'var(--blue)' : 'var(--bg3)';
+  micBtn.style.color         = mode === 'mic' ? '#fff' : 'var(--text2)';
+  micBtn.style.border        = mode === 'mic' ? 'none' : '1px solid var(--border2)';
+  tabBtn.style.background    = mode === 'tab' ? 'var(--blue)' : 'var(--bg3)';
+  tabBtn.style.color         = mode === 'tab' ? '#fff' : 'var(--text2)';
+  tabBtn.style.border        = mode === 'tab' ? 'none' : '1px solid var(--border2)';
+  document.getElementById('mode-info-mic').style.display = mode === 'mic' ? '' : 'none';
+  document.getElementById('mode-info-tab').style.display = mode === 'tab' ? '' : 'none';
+}
+
+function saveDeepgramKey() {
+  const val = document.getElementById('deepgram-key').value;
+  if (val) localStorage.setItem('deepgram_key', val);
+}
+
+function setRecordingUI(active) {
+  document.getElementById('btn-start').disabled = active;
+  document.getElementById('btn-stop').disabled  = !active;
+  document.getElementById('rec-ring').classList.toggle('active', active);
+  document.getElementById('rec-label').textContent = active ? 'Recording' : 'Stopped';
+  document.getElementById('voice-panel').classList.toggle('recording', active);
+  if (active) {
+    seconds = 0;
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(updateTimer, 1000);
+    document.getElementById('transcript-box').classList.remove('empty');
+    animateVis(true);
+  } else {
+    clearInterval(timerInterval); timerInterval = null;
+    animateVis(false);
+  }
+}
+
+function appendFinalLine(text) {
+  const box = document.getElementById('transcript-box');
+  const safe = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const filter = document.getElementById('filter-customer').checked;
+  const line = filter
+    ? `<span class="final"><span class="speaker-label">CUSTOMER</span>${safe}\n</span>`
+    : `<span class="final">${safe}\n</span>`;
+  finalTranscript += text + '\n';
+  box.insertAdjacentHTML('beforeend', line);
+  box.scrollTop = box.scrollHeight;
+  updateWordCount();
+}
+
+function setInterim(text) {
+  const box = document.getElementById('transcript-box');
+  let el = document.getElementById('interim-text');
+  if (!text) { if (el) el.remove(); return; }
+  if (!el) {
+    el = document.createElement('span');
+    el.id = 'interim-text'; el.className = 'interim';
+    box.appendChild(el);
+  }
+  el.textContent = text;
+  box.scrollTop = box.scrollHeight;
+}
+
 function startTranscription() {
+  if (transMode === 'tab') startTabAudioTranscription();
+  else startMicTranscription();
+}
+
+function startMicTranscription() {
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
     showToast('❌ Not supported. Use Chrome or Edge.', 'red'); return;
   }
@@ -1152,32 +1262,14 @@ function startTranscription() {
   recognition.lang = 'en-US';
   recognition.maxAlternatives = 1;
 
-  const box = document.getElementById('transcript-box');
-  box.classList.remove('empty');
-
   recognition.onresult = (event) => {
     let interim = '';
     for (let i = event.resultIndex; i < event.results.length; i++) {
       const t = event.results[i][0].transcript;
-      if (event.results[i].isFinal) {
-        const safe = t.trim().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        const filter = document.getElementById('filter-customer').checked;
-        const line = filter
-          ? `<span class="final"><span class="speaker-label">CUSTOMER</span>${safe}\n</span>`
-          : `<span class="final">${safe}\n</span>`;
-        finalTranscript += t.trim() + '\n';
-        box.insertAdjacentHTML('beforeend', line);
-        box.scrollTop = box.scrollHeight;
-        updateWordCount();
-      } else { interim = t; }
+      if (event.results[i].isFinal) { appendFinalLine(t.trim()); }
+      else { interim = t; }
     }
-    const interimEl = document.getElementById('interim-text');
-    if (interimEl) interimEl.textContent = interim;
-    else if (interim) {
-      const el = document.createElement('span');
-      el.id = 'interim-text'; el.className = 'interim'; el.textContent = interim;
-      box.appendChild(el); box.scrollTop = box.scrollHeight;
-    }
+    setInterim(interim);
   };
 
   recognition.onerror = (e) => {
@@ -1188,31 +1280,85 @@ function startTranscription() {
 
   recognition.start();
   isListening = true;
-  document.getElementById('btn-start').disabled = true;
-  document.getElementById('btn-stop').disabled  = false;
-  document.getElementById('rec-ring').classList.add('active');
-  document.getElementById('rec-label').textContent = 'Recording';
-  document.getElementById('voice-panel').classList.add('recording');
-  seconds = 0;
-  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-  timerInterval = setInterval(updateTimer, 1000);
-  animateVis(true);
+  setRecordingUI(true);
   showToast('🎙️ Listening… speak now', 'green');
 }
 
+async function startTabAudioTranscription() {
+  const apiKey = document.getElementById('deepgram-key').value || localStorage.getItem('deepgram_key');
+  if (!apiKey) {
+    showToast('❌ Paste your Deepgram API key first (free at deepgram.com)', 'red'); return;
+  }
+
+  try {
+    try {
+      tabStream = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: false });
+    } catch {
+      const s = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: { width: 1, height: 1 } });
+      s.getVideoTracks().forEach(t => t.stop());
+      tabStream = new MediaStream(s.getAudioTracks());
+    }
+  } catch (e) {
+    showToast('❌ Could not capture tab audio: ' + (e.message || e), 'red'); return;
+  }
+
+  if (!tabStream.getAudioTracks().length) {
+    showToast('❌ No audio track found. Make sure to select a tab and enable audio sharing.', 'red');
+    tabStream.getTracks().forEach(t => t.stop()); tabStream = null; return;
+  }
+
+  deepgramSocket = new WebSocket(
+    'wss://api.deepgram.com/v1/listen?model=nova-2&language=en-US&punctuate=true&interim_results=true',
+    ['token', apiKey]
+  );
+
+  deepgramSocket.onopen = () => {
+    tabRecorder = new MediaRecorder(tabStream);
+    tabRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0 && deepgramSocket.readyState === WebSocket.OPEN) {
+        deepgramSocket.send(e.data);
+      }
+    };
+    tabRecorder.start(250);
+    isListening = true;
+    setRecordingUI(true);
+    showToast('🔊 Capturing client voice from tab…', 'green');
+  };
+
+  deepgramSocket.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      const transcript = data?.channel?.alternatives?.[0]?.transcript;
+      const isFinal    = data?.is_final;
+      if (!transcript) return;
+      if (isFinal) { setInterim(''); appendFinalLine(transcript.trim()); }
+      else { setInterim(transcript); }
+    } catch {}
+  };
+
+  deepgramSocket.onerror = () => {
+    showToast('❌ Deepgram error — check your API key.', 'red');
+    stopTranscription();
+  };
+
+  deepgramSocket.onclose = (e) => {
+    if (isListening && e.code !== 1000) {
+      showToast('⚠️ Deepgram disconnected (code ' + e.code + ')', 'orange');
+      stopTranscription();
+    }
+  };
+
+  tabStream.getAudioTracks()[0].onended = () => { if (isListening) stopTranscription(); };
+}
+
 function stopTranscription() {
-  if (recognition) { recognition.stop(); recognition = null; }
+  if (deepgramSocket) { try { deepgramSocket.close(1000); } catch {} deepgramSocket = null; }
+  if (tabRecorder && tabRecorder.state !== 'inactive') { try { tabRecorder.stop(); } catch {} tabRecorder = null; }
+  if (tabStream) { tabStream.getTracks().forEach(t => t.stop()); tabStream = null; }
+  if (recognition) { try { recognition.stop(); } catch {} recognition = null; }
   isListening = false;
-  document.getElementById('btn-start').disabled = false;
-  document.getElementById('btn-stop').disabled  = true;
-  document.getElementById('rec-ring').classList.remove('active');
-  document.getElementById('rec-label').textContent = 'Stopped';
-  document.getElementById('voice-panel').classList.remove('recording');
-  clearInterval(timerInterval);
-  timerInterval = null;
-  animateVis(false);
-  const interim = document.getElementById('interim-text');
-  if (interim) interim.remove();
+  setRecordingUI(false);
+  setInterim('');
   showToast('⏹ Transcription stopped', 'blue');
   extractInfo();
 }
@@ -1332,6 +1478,55 @@ function setSelectField(id, val) {
   }
 }
 
+/* ── CALLBACK LIST ── */
+function saveCallback() {
+  const name  = document.getElementById('cb-name').value.trim();
+  const phone = document.getElementById('cb-phone').value.trim();
+  if (!phone) { showToast('Phone number required', 'red'); return; }
+  const list = JSON.parse(localStorage.getItem('hcp_callbacks') || '[]');
+  list.unshift({ name, phone, time: new Date().toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' }) });
+  localStorage.setItem('hcp_callbacks', JSON.stringify(list));
+  document.getElementById('cb-name').value  = '';
+  document.getElementById('cb-phone').value = '';
+  renderCallbacks();
+  showToast('✓ Callback saved', 'green');
+}
+
+function deleteCallback(i) {
+  const list = JSON.parse(localStorage.getItem('hcp_callbacks') || '[]');
+  list.splice(i, 1);
+  localStorage.setItem('hcp_callbacks', JSON.stringify(list));
+  renderCallbacks();
+}
+
+function copyPhone(phone) {
+  navigator.clipboard.writeText(phone)
+    .then(() => showToast('✓ ' + phone + ' copied', 'green'))
+    .catch(() => showToast('Copy failed', 'red'));
+}
+
+function renderCallbacks() {
+  const list = JSON.parse(localStorage.getItem('hcp_callbacks') || '[]');
+  const el   = document.getElementById('callback-list');
+  if (!list.length) {
+    el.innerHTML = '<div style="font-size:0.7rem;color:var(--text3);font-style:italic;padding:3px 0;">No callbacks yet.</div>';
+    return;
+  }
+  el.innerHTML = list.map((cb, i) => `
+    <div style="display:flex;align-items:center;gap:5px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:5px 7px;">
+      <div style="flex:1;min-width:0;overflow:hidden;">
+        ${cb.name ? `<div style="font-size:0.7rem;color:var(--text2);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${cb.name}</div>` : ''}
+        <div style="font-size:0.8rem;color:var(--text);font-weight:700;font-family:var(--font-mono);">${cb.phone}</div>
+        <div style="font-size:0.62rem;color:var(--text3);">${cb.time}</div>
+      </div>
+      <button onclick="copyPhone('${cb.phone}')"
+        style="background:var(--blue);color:#fff;border:none;padding:3px 8px;border-radius:3px;font-size:0.7rem;font-family:var(--font);cursor:pointer;white-space:nowrap;">Copy</button>
+      <button onclick="deleteCallback(${i})"
+        style="background:var(--bg3);color:var(--text2);border:1px solid var(--border2);padding:3px 6px;border-radius:3px;font-size:0.7rem;font-family:var(--font);cursor:pointer;">✕</button>
+    </div>
+  `).join('');
+}
+
 /* ── TOAST ── */
 function showToast(msg, type = 'blue') {
   const colors = { blue:'var(--blue)', green:'var(--green)', red:'var(--red)', orange:'var(--orange)' };
@@ -1347,6 +1542,11 @@ function showToast(msg, type = 'blue') {
 
 /* ── INIT ── */
 formChanged();
+renderCallbacks();
+(function restoreDeepgramKey() {
+  const k = localStorage.getItem('deepgram_key');
+  if (k) document.getElementById('deepgram-key').value = k;
+})();
 </script>
 </body>
 </html>
